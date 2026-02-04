@@ -100,7 +100,7 @@ namespace RoyalVilla.Controllers
 
                 if(existingVilla == null)
                 {
-                    return NotFound("Villa with ID {id} was not found");
+                    return NotFound($"Villa with ID {id} was not found");
                 }
 
 
@@ -120,5 +120,30 @@ namespace RoyalVilla.Controllers
             }
         }
 
+        [HttpDelete("{id:int}")]
+        public async Task<ActionResult<Villa>> DeleteVilla(int id)
+        {
+            try
+            {
+
+                var existingVilla = await _db.Villa.FirstOrDefaultAsync(u => u.Id == id );
+
+                if(existingVilla == null)
+                {
+                    return NotFound($"Villa with ID {id} was not found");
+                }
+
+                _db.Villa.Remove(existingVilla);
+                await _db.SaveChangesAsync();
+
+                return NoContent();
+            }
+            catch (Exception ex)
+            {
+
+                return StatusCode(StatusCodes.Status500InternalServerError,
+                $"An error occurred while deleting the villa : {ex.Message}");
+            }
+        }
     }
 }
