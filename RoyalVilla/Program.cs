@@ -32,9 +32,10 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 //Add Automapper VillaDTO to Villa
 builder.Services.AddAutoMapper(o =>
 {
-    o.CreateMap<VillaCreateDTO, Villa>();
-    o.CreateMap<VillaUpdateDTO, Villa>();
-    o.CreateMap<VillaDTO, Villa>().ReverseMap();
+   o.CreateMap<Villa, VillaCreateDTO>().ReverseMap();
+   o.CreateMap<Villa, VillaUpdateDTO>().ReverseMap();
+   o.CreateMap<Villa, VillaDTO>().ReverseMap();
+   o.CreateMap<VillaUpdateDTO, VillaDTO>().ReverseMap();
 }
 );
 

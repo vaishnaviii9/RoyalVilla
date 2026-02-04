@@ -22,10 +22,14 @@ namespace RoyalVilla.Controllers
         }
 
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<VillaDTO>>> GetVillas()
+        public async Task<ActionResult<ApiResponse<IEnumerable<VillaDTO>>>> GetVillas()
         {
             var villas = await _db.Villa.ToListAsync();
-            return Ok(_mapper.Map<List<VillaDTO>>(villas));
+
+            var dtoResponseVilla = _mapper.Map<List<VillaDTO>>(villas);
+            var response = ApiResponse<IEnumerable<VillaDTO>>.Ok(dtoResponseVilla, "Villas retrieved successfully");
+
+            return Ok(response);
         }
 
         [HttpGet("{id:int}")]
@@ -35,97 +39,81 @@ namespace RoyalVilla.Controllers
             {
                 if (id <= 0)
                 {
-                    return new ApiResponse<VillaDTO>()
-                    {
-                        StatusCode = 400,
-                        Errors = "Villa ID must be greater than 0",
-                        Success = false,
-                        Message = "Bad Request"
-                    };
+                    return NotFound(ApiResponse<object>.NotFound("Villa ID must be greater than zero"));
                 }
 
                 var villa = await _db.Villa.FirstOrDefaultAsync(u => u.Id == id);
 
                 if (villa == null)
                 {
-                    return new ApiResponse<VillaDTO>()
-                    {
-                        StatusCode = 404,
-                        Errors = $"Villa with ID {id} was not found",
-                        Success = false,
-                        Message = "Not Found"
-                    };
+                    return NotFound(ApiResponse<object>.NotFound($"Villa with ID {id} was not found"));
                 }
-                return new ApiResponse<VillaDTO>()
-                {
-                    StatusCode = 200,
-                    Success = true,
-                    Message = "Records retrieved successfully",
-                    Data = _mapper.Map<VillaDTO>(villa)
-                };
-                
+
+                return Ok(ApiResponse<VillaDTO>.Ok(_mapper.Map<VillaDTO>(villa), "Records retrieved successfully"));
+
             }
             catch (Exception ex)
             {
-
-                return StatusCode(StatusCodes.Status500InternalServerError,
-                $"An error occurred while retrieving villa with ID {id}: {ex.Message}");
+                var response = ApiResponse<object>.Error(500, $"An error occurred while retrieving the villa : {ex.Message}", ex.Message);
+                return StatusCode(500, response);
             }
         }
 
         [HttpPost]
-        public async Task<ActionResult<VillaCreateDTO>> CreateVilla(VillaCreateDTO villaDTO)
+        public async Task<ActionResult<ApiResponse<VillaDTO>>> CreateVilla(VillaCreateDTO villaDTO)
         {
             try
             {
                 if (villaDTO == null)
                 {
-                    return BadRequest("Villa data is required");
+                    return BadRequest(ApiResponse<object>.BadRequest("Villa data is required"));
+
                 }
                 var duplicateVilla = await _db.Villa.FirstOrDefaultAsync(u => u.Name.ToLower() == villaDTO.Name.ToLower());
 
                 if (duplicateVilla != null)
                 {
-                    return Conflict($"A villa with the name '{villaDTO.Name}' already exists");
+                    return Conflict(ApiResponse<object>.Conflict($"A villa with the name '{villaDTO.Name}' already exists"));
                 }
 
                 Villa villa = _mapper.Map<Villa>(villaDTO);
                 await _db.Villa.AddAsync(villa);
                 await _db.SaveChangesAsync();
 
+                var response = ApiResponse<VillaDTO>.CreatedAt(_mapper.Map<VillaDTO>(villa), "Villa Created successfully");
                 return CreatedAtAction(
                     nameof(GetVillaById),
                     new { id = villa.Id },
-                    _mapper.Map<VillaCreateDTO>(villa));
+                    response);
             }
             catch (Exception ex)
             {
-
-                return StatusCode(StatusCodes.Status500InternalServerError,
-                $"An error occurred while creating the villa : {ex.Message}");
+                var response = ApiResponse<object>.Error(500, $"An error occurred while creating the villa : {ex.Message}", ex.Message);
+                return StatusCode(500, response);
             }
         }
 
         [HttpPut("{id:int}")]
-        public async Task<ActionResult<VillaUpdateDTO>> UpdateVilla(int id, VillaUpdateDTO villaDTO)
+        public async Task<ActionResult<ApiResponse<VillaDTO>>> UpdateVilla(int id, VillaUpdateDTO villaDTO)
         {
             try
             {
                 if (villaDTO == null)
                 {
-                    return BadRequest("Villa data is required");
+                    return BadRequest(ApiResponse<object>.BadRequest("Villa data is required"));
+
                 }
 
                 if (id != villaDTO.Id)
                 {
-                    return BadRequest("Villa ID in URL does not match Villa ID in request body");
+                    return BadRequest(ApiResponse<object>.BadRequest("Villa ID in URL does not match Villa ID in request body"));
                 }
 
                 var existingVilla = await _db.Villa.FirstOrDefaultAsync(u => u.Id == id);
 
                 if (existingVilla == null)
                 {
-                    return NotFound($"Villa with ID {id} was not found");
+                    return NotFound(ApiResponse<object>.NotFound($"Villa with ID {id} was not found"));
                 }
 
                 var duplicateVilla = await _db.Villa.FirstOrDefaultAsync(u => u.Name.ToLower() == villaDTO.Name.ToLower()
@@ -133,7 +121,7 @@ namespace RoyalVilla.Controllers
 
                 if (duplicateVilla != null)
                 {
-                    return Conflict($"A villa with the name '{villaDTO.Name}' already exists");
+                    return Conflict(ApiResponse<object>.Conflict($"A villa with the name '{villaDTO.Name}' already exists"));
                 }
 
                 _mapper.Map(villaDTO, existingVilla);
@@ -142,18 +130,18 @@ namespace RoyalVilla.Controllers
 
                 await _db.SaveChangesAsync();
 
+                var response = ApiResponse<VillaDTO>.Ok(_mapper.Map<VillaDTO>(villaDTO),"Villa updated successfully");
                 return Ok(villaDTO);
             }
             catch (Exception ex)
             {
-
-                return StatusCode(StatusCodes.Status500InternalServerError,
-                $"An error occurred while updating the villa : {ex.Message}");
+                var response = ApiResponse<object>.Error(500, $"An error occurred while updating the villa : {ex.Message}", ex.Message);
+                return StatusCode(500, response);
             }
         }
 
         [HttpDelete("{id:int}")]
-        public async Task<ActionResult> DeleteVilla(int id)
+        public async Task<ActionResult<ApiResponse<object>>> DeleteVilla(int id)
         {
             try
             {
@@ -162,19 +150,20 @@ namespace RoyalVilla.Controllers
 
                 if (existingVilla == null)
                 {
-                    return NotFound($"Villa with ID {id} was not found");
+
+                    return NotFound(ApiResponse<object>.NotFound($"Villa with ID {id} was not found"));
                 }
 
                 _db.Villa.Remove(existingVilla);
                 await _db.SaveChangesAsync();
 
-                return NoContent();
+                var response = ApiResponse<object>.NoContent("Villa deleted successfully");
+                return Ok(response);
             }
             catch (Exception ex)
             {
-
-                return StatusCode(StatusCodes.Status500InternalServerError,
-                $"An error occurred while deleting the villa : {ex.Message}");
+                var response = ApiResponse<object>.Error(500, $"An error occurred while deleting the villa : {ex.Message}", ex.Message);
+                return StatusCode(500, response);
             }
         }
     }
