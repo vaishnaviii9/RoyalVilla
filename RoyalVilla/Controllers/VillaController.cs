@@ -29,23 +29,41 @@ namespace RoyalVilla.Controllers
         }
 
         [HttpGet("{id:int}")]
-        public async Task<ActionResult<VillaDTO>> GetVillaById(int id)
+        public async Task<ActionResult<ApiResponse<VillaDTO>>> GetVillaById(int id)
         {
             try
             {
                 if (id <= 0)
                 {
-                    return BadRequest("Villa ID must be greater than 0");
+                    return new ApiResponse<VillaDTO>()
+                    {
+                        StatusCode = 400,
+                        Errors = "Villa ID must be greater than 0",
+                        Success = false,
+                        Message = "Bad Request"
+                    };
                 }
 
                 var villa = await _db.Villa.FirstOrDefaultAsync(u => u.Id == id);
 
                 if (villa == null)
                 {
-                    return NotFound($"Villa with ID {id} was not found");
+                    return new ApiResponse<VillaDTO>()
+                    {
+                        StatusCode = 404,
+                        Errors = $"Villa with ID {id} was not found",
+                        Success = false,
+                        Message = "Not Found"
+                    };
                 }
-
-                return Ok(_mapper.Map<VillaDTO>(villa));
+                return new ApiResponse<VillaDTO>()
+                {
+                    StatusCode = 200,
+                    Success = true,
+                    Message = "Records retrieved successfully",
+                    Data = _mapper.Map<VillaDTO>(villa)
+                };
+                
             }
             catch (Exception ex)
             {
@@ -64,7 +82,7 @@ namespace RoyalVilla.Controllers
                 {
                     return BadRequest("Villa data is required");
                 }
-                var duplicateVilla = await _db.Villa.FirstOrDefaultAsync(u=>u.Name.ToLower() == villaDTO.Name.ToLower());
+                var duplicateVilla = await _db.Villa.FirstOrDefaultAsync(u => u.Name.ToLower() == villaDTO.Name.ToLower());
 
                 if (duplicateVilla != null)
                 {
@@ -76,8 +94,8 @@ namespace RoyalVilla.Controllers
                 await _db.SaveChangesAsync();
 
                 return CreatedAtAction(
-                    nameof(GetVillaById), 
-                    new {id = villa.Id},
+                    nameof(GetVillaById),
+                    new { id = villa.Id },
                     _mapper.Map<VillaCreateDTO>(villa));
             }
             catch (Exception ex)
@@ -98,26 +116,26 @@ namespace RoyalVilla.Controllers
                     return BadRequest("Villa data is required");
                 }
 
-                if(id != villaDTO.Id)
+                if (id != villaDTO.Id)
                 {
                     return BadRequest("Villa ID in URL does not match Villa ID in request body");
                 }
 
-                var existingVilla = await _db.Villa.FirstOrDefaultAsync(u => u.Id == id );
+                var existingVilla = await _db.Villa.FirstOrDefaultAsync(u => u.Id == id);
 
-                if(existingVilla == null)
+                if (existingVilla == null)
                 {
                     return NotFound($"Villa with ID {id} was not found");
                 }
 
-                var duplicateVilla = await _db.Villa.FirstOrDefaultAsync(u=>u.Name.ToLower() == villaDTO.Name.ToLower()
-                && u.Id !=id);
+                var duplicateVilla = await _db.Villa.FirstOrDefaultAsync(u => u.Name.ToLower() == villaDTO.Name.ToLower()
+                && u.Id != id);
 
                 if (duplicateVilla != null)
                 {
                     return Conflict($"A villa with the name '{villaDTO.Name}' already exists");
                 }
-                
+
                 _mapper.Map(villaDTO, existingVilla);
 
                 existingVilla.UpdatedDate = DateTime.Now;
@@ -140,9 +158,9 @@ namespace RoyalVilla.Controllers
             try
             {
 
-                var existingVilla = await _db.Villa.FirstOrDefaultAsync(u => u.Id == id );
+                var existingVilla = await _db.Villa.FirstOrDefaultAsync(u => u.Id == id);
 
-                if(existingVilla == null)
+                if (existingVilla == null)
                 {
                     return NotFound($"Villa with ID {id} was not found");
                 }
