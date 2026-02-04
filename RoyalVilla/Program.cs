@@ -33,6 +33,7 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 builder.Services.AddAutoMapper(o =>
 {
     o.CreateMap<VillaCreateDTO, Villa>();
+    o.CreateMap<VillaUpdateDTO, Villa>();
 }
 );
 
