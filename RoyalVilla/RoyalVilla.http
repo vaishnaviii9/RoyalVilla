@@ -1,0 +1,6 @@
+@RoyalVilla_HostAddress = https://localhost:7108
+
+GET {{RoyalVilla_HostAddress}}/
+Accept: application/json
+
+###
