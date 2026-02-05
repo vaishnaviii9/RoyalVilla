@@ -1,12 +1,10 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace RoyalVilla.Models
-{
-    public class User
-    {
-        [Key]
-        public int Id { get; set; }
 
+namespace RoyalVilla.Models.DTO
+{
+    public class RegistrationRequestDTO
+    {
         [Required]
         [EmailAddress]
         public required string Email { get; set; }
@@ -18,13 +16,8 @@ namespace RoyalVilla.Models
         [Required]
         public required string Password { get; set; }
 
-        [Required]
         [MaxLength(50)]
         public required string Role { get; set; } = "Customer";
-
-        public DateTime CreatedDate { get; set; } 
-        public DateTime UpdatedDate { get; set; } 
-
 
     }
 }
