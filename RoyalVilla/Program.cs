@@ -3,6 +3,7 @@ using RoyalVilla.Data;
 using RoyalVilla.Models.DTO;
 using Scalar.AspNetCore;
 using RoyalVilla.Models;
+using RoyalVilla.Services;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -28,7 +29,6 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
         builder.Configuration.GetConnectionString("DefaultConnection"),
         ServerVersion.AutoDetect(builder.Configuration.GetConnectionString("DefaultConnection"))
     ));
-
 //Add Automapper VillaDTO to Villa
 builder.Services.AddAutoMapper(o =>
 {
@@ -40,6 +40,7 @@ builder.Services.AddAutoMapper(o =>
 }
 );
 
+builder.Services.AddScoped<IAuthService,AuthService>();
 var app = builder.Build();
 
 // Configure the HTTP request pipeline
