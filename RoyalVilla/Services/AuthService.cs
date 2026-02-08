@@ -21,7 +21,7 @@ namespace RoyalVilla.Services
         public async Task<bool> IsEmailExistsAsync(string email)
         {
             return await _db.Users.
-            AnyAsync(u => u.Email.Equals(email, StringComparison.CurrentCultureIgnoreCase));
+            AnyAsync(u => u.Email.ToLower()== email.ToLower());
         }
 
         public Task<LoginResponseDTO?> LoginAsync(LoginRequestDTO loginRequestDTO)
