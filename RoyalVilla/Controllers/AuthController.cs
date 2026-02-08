@@ -11,10 +11,10 @@ namespace RoyalVilla.Controllers
     {
         private readonly IAuthService _authservice = authService;
 
-        [HttpGet]
+        [HttpPost]
         [ProducesResponseType(typeof(ApiResponse<IEnumerable<VillaDTO>>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse<IEnumerable<object>>), StatusCodes.Status500InternalServerError)]
-        public async Task<ActionResult<ApiResponse<UserDTO>>> Register(RegistrationRequestDTO registrationRequestDTO)
+        public async Task<ActionResult<ApiResponse<UserDTO>>> Register([FromBody]RegistrationRequestDTO registrationRequestDTO)
         {
             try
             {
