@@ -24,7 +24,7 @@ namespace RoyalVilla.Controllers
         }
 
         [HttpGet]
-        [Authorize]
+        [Authorize(Roles ="Admin")]
         [ProducesResponseType(typeof(ApiResponse<IEnumerable<VillaDTO>>),StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse<IEnumerable<object>>),StatusCodes.Status500InternalServerError)]
         public async Task<ActionResult<ApiResponse<IEnumerable<VillaDTO>>>> GetVillas()
