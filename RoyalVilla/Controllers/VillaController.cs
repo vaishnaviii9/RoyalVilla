@@ -11,6 +11,7 @@ namespace RoyalVilla.Controllers
 {
     [Route("api/villa")]
     [ApiController]
+    [Authorize(Roles ="Customer, Admin")]
     public class VillaController : ControllerBase
     {
         private readonly ApplicationDbContext _db;
@@ -37,6 +38,7 @@ namespace RoyalVilla.Controllers
         }
 
         [HttpGet("{id:int}")]
+        [Authorize(Roles ="Customer,Admin")]
         [ProducesResponseType(typeof(ApiResponse<VillaDTO>),StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse<IEnumerable<object>>),StatusCodes.Status500InternalServerError)]
         [ProducesResponseType(typeof(ApiResponse<IEnumerable<object>>),StatusCodes.Status404NotFound)]
