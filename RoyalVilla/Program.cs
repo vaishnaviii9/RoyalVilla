@@ -4,9 +4,36 @@ using RoyalVilla.Models.DTO;
 using Scalar.AspNetCore;
 using RoyalVilla.Models;
 using RoyalVilla.Services;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using System.Text;
+using Microsoft.IdentityModel.Tokens;
 
 
 var builder = WebApplication.CreateBuilder(args);
+var key = Encoding.ASCII.GetBytes(builder.Configuration.GetValue<string>("JwtSettings:Secret") ?? throw new InvalidOperationException("JWT Secret not configured"));
+
+
+//Add authentication
+builder.Services.AddAuthentication(option =>
+{
+    option.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    option.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+    option.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
+
+}).AddJwtBearer(options =>
+{
+    options.RequireHttpsMetadata = false;
+    options.SaveToken = true;
+    options.TokenValidationParameters = new TokenValidationParameters
+    {
+        ValidateIssuerSigningKey = true,
+        IssuerSigningKey = new SymmetricSecurityKey(key),
+        ValidateIssuer = false,
+        ValidateAudience = false,
+        ClockSkew = TimeSpan.Zero
+    };
+
+});
 
 // Add services to the container
 builder.Services.AddControllers();
@@ -32,15 +59,15 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 //Add Automapper VillaDTO to Villa
 builder.Services.AddAutoMapper(o =>
 {
-   o.CreateMap<Villa, VillaCreateDTO>().ReverseMap();
-   o.CreateMap<Villa, VillaUpdateDTO>().ReverseMap();
-   o.CreateMap<Villa, VillaDTO>().ReverseMap();
-   o.CreateMap<VillaUpdateDTO, VillaDTO>().ReverseMap();
-   o.CreateMap<User,UserDTO>().ReverseMap();
+    o.CreateMap<Villa, VillaCreateDTO>().ReverseMap();
+    o.CreateMap<Villa, VillaUpdateDTO>().ReverseMap();
+    o.CreateMap<Villa, VillaDTO>().ReverseMap();
+    o.CreateMap<VillaUpdateDTO, VillaDTO>().ReverseMap();
+    o.CreateMap<User, UserDTO>().ReverseMap();
 }
 );
 
-builder.Services.AddScoped<IAuthService,AuthService>();
+builder.Services.AddScoped<IAuthService, AuthService>();
 var app = builder.Build();
 
 // Configure the HTTP request pipeline
@@ -57,6 +84,8 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+app.UseAuthentication();
 
 app.UseAuthorization();
 

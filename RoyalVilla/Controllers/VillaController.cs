@@ -1,5 +1,6 @@
 using System.Collections;
 using AutoMapper;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using RoyalVilla.Data;
@@ -22,6 +23,7 @@ namespace RoyalVilla.Controllers
         }
 
         [HttpGet]
+        [Authorize]
         [ProducesResponseType(typeof(ApiResponse<IEnumerable<VillaDTO>>),StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse<IEnumerable<object>>),StatusCodes.Status500InternalServerError)]
         public async Task<ActionResult<ApiResponse<IEnumerable<VillaDTO>>>> GetVillas()
