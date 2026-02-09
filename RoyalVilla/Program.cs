@@ -7,6 +7,8 @@ using RoyalVilla.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using System.Text;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.AspNetCore.OpenApi;
+using Microsoft.OpenApi;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -37,6 +39,31 @@ builder.Services.AddAuthentication(option =>
 
 // Add services to the container
 builder.Services.AddControllers();
+
+//OpenApi
+builder.Services.AddOpenApi(options =>
+{
+    options.AddDocumentTransformer((document, context, cancellationToken) =>
+    {
+        document.Components ??= new();
+        document.Components.SecuritySchemes = new Dictionary<string, IOpenApiSecurityScheme>
+        {
+            ["Bearer"]= new OpenApiSecurityScheme
+            {
+                Type = SecuritySchemeType.Http,
+                Scheme = "bearer",
+                BearerFormat ="JWT",
+                Description = "Enter JWT Bearer Token"
+            }
+        };
+        document.Security = [
+            new OpenApiSecurityRequirement{
+               { new OpenApiSecuritySchemeReference("Bearer"), new List<string>()}
+            }
+        ];
+        return Task.CompletedTask;
+    });
+});
 
 // Add OpenAPI with Swagger
 builder.Services.AddEndpointsApiExplorer();
