@@ -144,8 +144,8 @@ namespace RoyalVilla.Controllers
 
                 await _db.SaveChangesAsync();
 
-                var response = ApiResponse<VillaDTO>.Ok(_mapper.Map<VillaDTO>(villaDTO),"Villa updated successfully");
-                return Ok(villaDTO);
+                var response = ApiResponse<VillaDTO>.Ok(_mapper.Map<VillaDTO>(existingVilla),"Villa updated successfully");
+                return Ok(response);
             }
             catch (Exception ex)
             {

@@ -11,10 +11,12 @@ namespace RoyalVilla.Controllers
     {
         private readonly IAuthService _authservice = authService;
 
-        [HttpPost]
-        [ProducesResponseType(typeof(ApiResponse<IEnumerable<VillaDTO>>), StatusCodes.Status200OK)]
-        [ProducesResponseType(typeof(ApiResponse<IEnumerable<object>>), StatusCodes.Status500InternalServerError)]
-        public async Task<ActionResult<ApiResponse<UserDTO>>> Register([FromBody]RegistrationRequestDTO registrationRequestDTO)
+        [HttpPost("register")]
+        [ProducesResponseType(typeof(ApiResponse<UserDTO>), StatusCodes.Status201Created)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status409Conflict)]
+        public async Task<ActionResult<ApiResponse<UserDTO>>> Register([FromBody] RegistrationRequestDTO registrationRequestDTO)
         {
             try
             {
@@ -45,6 +47,42 @@ namespace RoyalVilla.Controllers
             catch (Exception ex)
             {
                 var response = ApiResponse<object>.Error(500, $"An error occurred during registration : {ex.Message}", ex.Message);
+                return StatusCode(500, response);
+            }
+        }
+
+
+        [HttpPost("login")]
+        [ProducesResponseType(typeof(ApiResponse<IEnumerable<LoginResponseDTO>>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
+        public async Task<ActionResult<ApiResponse<LoginRequestDTO>>> Login([FromBody] LoginRequestDTO loginRequestDTO)
+        {
+            try
+            {
+                //auth service
+                if (loginRequestDTO == null)
+                {
+                    return BadRequest(ApiResponse<object>.BadRequest("Login data is required"));
+
+                }
+
+               
+                var loginResponse = await _authservice.LoginAsync(loginRequestDTO);
+
+                if (loginResponse == null)
+                {
+                    return BadRequest(ApiResponse<object>.BadRequest("Login failed"));
+
+                }
+
+                var response = ApiResponse<LoginResponseDTO>.Ok(loginResponse, "Login registered successfully");
+
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                var response = ApiResponse<object>.Error(500, $"An error occurred during login : {ex.Message}", ex.Message);
                 return StatusCode(500, response);
             }
         }
