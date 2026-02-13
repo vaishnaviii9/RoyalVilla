@@ -1,0 +1,1008 @@
+# RoyalVilla API - Complete Architecture & Workflow Guide
+
+## 📋 Table of Contents
+1. [Project Overview](#project-overview)
+2. [Architecture Pattern](#architecture-pattern)
+3. [Request Flow](#request-flow)
+4. [Core Components](#core-components)
+5. [Detailed Workflow Example](#detailed-workflow-example)
+6. [Key Concepts Explained](#key-concepts-explained)
+
+---
+
+## Project Overview
+
+**RoyalVilla** is an ASP.NET Core Web API for managing villa properties. It follows a **layered architecture** pattern with:
+- **Controllers** (API endpoints)
+- **Services** (Business logic)
+- **Data Access Layer** (Entity Framework Core)
+- **DTOs** (Data Transfer Objects)
+- **AutoMapper** (Object mapping)
+- **JWT Authentication** (Security)
+
+---
+
+## Architecture Pattern
+
+The project follows the **Repository Pattern** with **Dependency Injection**:
+
+```
+┌─────────────┐
+│   Client    │ (Postman, Browser, Mobile App)
+└──────┬──────┘
+       │ HTTP Request
+       ▼
+┌─────────────────────────────────────────┐
+│         ASP.NET Core Pipeline           │
+│  (Authentication → Authorization)       │
+└──────┬──────────────────────────────────┘
+       │
+       ▼
+┌─────────────────────────────────────────┐
+│          CONTROLLER LAYER               │
+│  - Receives HTTP requests               │
+│  - Validates input                      │
+│  - Calls services/DbContext             │
+│  - Returns HTTP responses               │
+└──────┬──────────────────────────────────┘
+       │
+       ▼
+┌─────────────────────────────────────────┐
+│          SERVICE LAYER                  │
+│  - Business logic                       │
+│  - Authentication/Authorization logic   │
+│  - Token generation                     │
+└──────┬──────────────────────────────────┘
+       │
+       ▼
+┌─────────────────────────────────────────┐
+│          AUTOMAPPER                     │
+│  - Maps DTOs ↔ Entities                 │
+│  - Transforms data structures           │
+└──────┬──────────────────────────────────┘
+       │
+       ▼
+┌─────────────────────────────────────────┐
+│     ENTITY FRAMEWORK CORE (DbContext)   │
+│  - Database abstraction                 │
+│  - LINQ queries                         │
+│  - Change tracking                      │
+└──────┬──────────────────────────────────┘
+       │
+       ▼
+┌─────────────────────────────────────────┐
+│          MySQL DATABASE                 │
+│  - Stores actual data                   │
+└─────────────────────────────────────────┘
+```
+
+---
+
+## Request Flow
+
+### Complete Request-Response Cycle
+
+```mermaid
+sequenceDiagram
+    participant Client
+    participant Middleware
+    participant Controller
+    participant AutoMapper
+    participant DbContext
+    participant Database
+
+    Client->>Middleware: HTTP Request (e.g., GET /api/villa/1)
+    Middleware->>Middleware: Authentication Check (JWT)
+    Middleware->>Middleware: Authorization Check (Roles)
+    Middleware->>Controller: Forward Request
+    Controller->>Controller: Validate Input
+    Controller->>DbContext: Query Data (LINQ)
+    DbContext->>Database: Execute SQL Query
+    Database-->>DbContext: Return Entity (Villa)
+    DbContext-->>Controller: Return Villa Entity
+    Controller->>AutoMapper: Map Villa → VillaDTO
+    AutoMapper-->>Controller: Return VillaDTO
+    Controller->>Controller: Wrap in ApiResponse<VillaDTO>
+    Controller-->>Client: HTTP Response (200 OK + JSON)
+```
+
+---
+
+## Core Components
+
+### 1. **Program.cs** - Application Entry Point
+
+This is where the entire application is configured and started.
+
+#### Key Responsibilities:
+- **Service Registration** (Dependency Injection)
+- **Middleware Configuration**
+- **Database Setup**
+- **Authentication/Authorization Setup**
+
+#### Detailed Breakdown:
+
+```csharp
+var builder = WebApplication.CreateBuilder(args);
+```
+- Creates the application builder
+- Loads configuration from [appsettings.json](file:///Users/vaishnavit/Developer/Code/RoyalVilla/RoyalVilla/appsettings.json)
+
+#### Service Registration (Lines 19-103)
+
+**1. Authentication Setup (Lines 19-38)**
+```csharp
+builder.Services.AddAuthentication(option => {
+    option.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    option.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+}).AddJwtBearer(options => {
+    options.TokenValidationParameters = new TokenValidationParameters {
+        ValidateIssuerSigningKey = true,
+        IssuerSigningKey = new SymmetricSecurityKey(key),
+        ValidateIssuer = false,
+        ValidateAudience = false
+    };
+});
+```
+- Configures JWT Bearer authentication
+- Sets up token validation rules
+- Uses secret key from configuration
+
+**2. Controllers (Line 41)**
+```csharp
+builder.Services.AddControllers();
+```
+- Registers all API controllers
+- Enables MVC pattern
+
+**3. OpenAPI/Swagger (Lines 44-78)**
+```csharp
+builder.Services.AddOpenApi(options => { ... });
+builder.Services.AddSwaggerGen(c => { ... });
+```
+- Configures API documentation
+- Adds JWT authentication to Swagger UI
+- Enables interactive API testing
+
+**4. Database Context (Lines 81-85)**
+```csharp
+builder.Services.AddDbContext<ApplicationDbContext>(options =>
+    options.UseMySql(
+        builder.Configuration.GetConnectionString("DefaultConnection"),
+        ServerVersion.AutoDetect(...)
+    ));
+```
+- Registers Entity Framework DbContext
+- Configures MySQL database connection
+- Enables dependency injection of DbContext
+
+**5. AutoMapper (Lines 87-101)**
+```csharp
+builder.Services.AddAutoMapper(o => {
+    o.CreateMap<Villa, VillaCreateDTO>().ReverseMap();
+    o.CreateMap<Villa, VillaUpdateDTO>().ReverseMap();
+    o.CreateMap<Villa, VillaDTO>().ReverseMap();
+    // ... more mappings
+});
+```
+- Configures object-to-object mappings
+- Enables automatic conversion between Entities and DTOs
+- `ReverseMap()` creates bidirectional mapping
+
+**6. Service Registration (Line 103)**
+```csharp
+builder.Services.AddScoped<IAuthService, AuthService>();
+```
+- Registers AuthService for dependency injection
+- `Scoped` lifetime = one instance per HTTP request
+
+#### Middleware Pipeline (Lines 107-125)
+
+```csharp
+var app = builder.Build();
+
+if (app.Environment.IsDevelopment()) {
+    app.UseSwagger();
+    app.MapScalarApiReference(...);
+}
+
+app.UseHttpsRedirection();    // Redirect HTTP → HTTPS
+app.UseAuthentication();      // Check JWT token
+app.UseAuthorization();       // Check user permissions
+app.MapControllers();         // Map routes to controllers
+```
+
+**Order matters!** Middleware executes in sequence:
+1. HTTPS redirection
+2. Authentication (verify token)
+3. Authorization (check permissions)
+4. Route to controller
+
+#### Database Migration (Lines 127-137)
+
+```csharp
+await SeedDataAsync(app);
+
+static async Task SeedDataAsync(WebApplication app) {
+    using var scope = app.Services.CreateScope();
+    var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+    await context.Database.MigrateAsync();
+}
+```
+- Automatically applies pending database migrations on startup
+- Ensures database schema is up-to-date
+
+---
+
+### 2. **Controllers** - API Endpoints
+
+Controllers handle HTTP requests and return responses.
+
+#### Example: VillaController
+
+**Location:** [Controllers/VillaController.cs](file:///Users/vaishnavit/Developer/Code/RoyalVilla/RoyalVilla/Controllers/VillaController.cs)
+
+#### Key Attributes:
+```csharp
+[Route("api/villa")]
+[ApiController]
+public class VillaController : ControllerBase
+```
+- `[Route]` - Base URL path
+- `[ApiController]` - Enables automatic model validation, binding
+
+#### Constructor Injection:
+```csharp
+private readonly ApplicationDbContext _db;
+private readonly IMapper _mapper;
+
+public VillaController(ApplicationDbContext db, IMapper mapper)
+{
+    _db = db;
+    _mapper = mapper;
+}
+```
+- **Dependency Injection** provides DbContext and AutoMapper
+- `readonly` ensures they can't be reassigned
+
+#### Endpoint Example: GetVillaById
+
+```csharp
+[HttpGet("{id:int}")]
+[ProducesResponseType(typeof(ApiResponse<VillaDTO>), StatusCodes.Status200OK)]
+[ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+public async Task<ActionResult<ApiResponse<VillaDTO>>> GetVillaById(int id)
+{
+    // 1. Validate input
+    if (id <= 0) {
+        return NotFound(ApiResponse<object>.NotFound("Villa ID must be greater than zero"));
+    }
+
+    // 2. Query database using Entity Framework
+    var villa = await _db.Villa.FirstOrDefaultAsync(u => u.Id == id);
+
+    // 3. Check if found
+    if (villa == null) {
+        return NotFound(ApiResponse<object>.NotFound($"Villa with ID {id} was not found"));
+    }
+
+    // 4. Map Entity to DTO using AutoMapper
+    var villaDTO = _mapper.Map<VillaDTO>(villa);
+
+    // 5. Wrap in ApiResponse and return
+    return Ok(ApiResponse<VillaDTO>.Ok(villaDTO, "Records retrieved successfully"));
+}
+```
+
+**What happens here:**
+1. **Route:** `GET /api/villa/5` → `id = 5`
+2. **Validation:** Checks if ID is valid
+3. **Database Query:** EF Core translates LINQ to SQL
+4. **Mapping:** Converts [Villa](file:///Users/vaishnavit/Developer/Code/RoyalVilla/RoyalVilla/Models/Villa.cs#6-30) entity to [VillaDTO](file:///Users/vaishnavit/Developer/Code/RoyalVilla/RoyalVilla/Models/DTO/VillaDTO.cs#10-30)
+5. **Response:** Returns JSON with standardized format
+
+---
+
+### 3. **Entity Framework Core** - Database Access
+
+#### ApplicationDbContext
+
+**Location:** [Data/ApplicationDbContext.cs](file:///Users/vaishnavit/Developer/Code/RoyalVilla/RoyalVilla/Data/ApplicationDbContext.cs)
+
+```csharp
+public class ApplicationDbContext : DbContext
+{
+    public DbSet<Villa> Villa { get; set; }
+    public DbSet<User> Users { get; set; }
+    public DbSet<VillaAmenities> VillaAmenities { get; set; }
+
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        // Seed initial data
+        modelBuilder.Entity<Villa>().HasData(
+            new Villa { Id = 1, Name = "Royal Villa", ... },
+            new Villa { Id = 2, Name = "Premium Pool Villa", ... }
+        );
+    }
+}
+```
+
+#### What is DbContext?
+- **Abstraction layer** over the database
+- Represents a **session** with the database
+- Tracks changes to entities
+- Translates LINQ queries to SQL
+
+#### DbSet<T>
+- Represents a **table** in the database
+- `DbSet<Villa>` = Villa table
+- Provides LINQ query methods
+
+#### Common Operations:
+
+**Query:**
+```csharp
+var villas = await _db.Villa.ToListAsync();
+var villa = await _db.Villa.FirstOrDefaultAsync(v => v.Id == id);
+```
+
+**Insert:**
+```csharp
+await _db.Villa.AddAsync(villa);
+await _db.SaveChangesAsync();
+```
+
+**Update:**
+```csharp
+_mapper.Map(villaDTO, existingVilla);
+await _db.SaveChangesAsync();  // EF tracks changes automatically
+```
+
+**Delete:**
+```csharp
+_db.Villa.Remove(existingVilla);
+await _db.SaveChangesAsync();
+```
+
+---
+
+### 4. **Entities (Models)** - Database Tables
+
+**Location:** [Models/Villa.cs](file:///Users/vaishnavit/Developer/Code/RoyalVilla/RoyalVilla/Models/Villa.cs)
+
+```csharp
+public class Villa
+{
+    [Key]
+    public int Id { get; set; }
+
+    [Required]
+    public required string Name { get; set; }
+
+    public string? Details { get; set; }
+    public double Rate { get; set; }
+    public int Sqft { get; set; }
+    public int Occupancy { get; set; }
+    public string? ImageUrl { get; set; }
+    public DateTime CreatedDate { get; set; }
+    public DateTime? UpdatedDate { get; set; }
+
+    public ICollection<VillaAmenities>? Amenities { get; set; }
+}
+```
+
+#### Key Attributes:
+- `[Key]` - Primary key
+- `[Required]` - NOT NULL in database
+- `?` - Nullable property
+- `required` - Must be set during initialization
+
+#### Relationships:
+```csharp
+public ICollection<VillaAmenities>? Amenities { get; set; }
+```
+- One-to-Many relationship
+- One Villa can have multiple Amenities
+
+---
+
+### 5. **DTOs (Data Transfer Objects)** - API Contracts
+
+DTOs define the **shape of data** sent to/from the API.
+
+#### Why use DTOs?
+1. **Security** - Don't expose internal entity structure
+2. **Versioning** - API contract independent of database
+3. **Validation** - Different rules for create/update
+4. **Performance** - Send only necessary data
+
+#### Example DTOs:
+
+**VillaDTO** - For reading data
+```csharp
+public class VillaDTO
+{
+    public int Id { get; set; }
+    public required string Name { get; set; }
+    public string? Details { get; set; }
+    public double Rate { get; set; }
+    public int Sqft { get; set; }
+    public int Occupancy { get; set; }
+    public string? ImageUrl { get; set; }
+}
+```
+
+**VillaCreateDTO** - For creating new villas
+```csharp
+public class VillaCreateDTO
+{
+    [MaxLength(50)]
+    [Required]
+    public required string Name { get; set; }
+    
+    public string? Details { get; set; }
+    public double Rate { get; set; }
+    public int Sqft { get; set; }
+    public int Occupancy { get; set; }
+    public string? ImageUrl { get; set; }
+    // No Id - database generates it
+}
+```
+
+**VillaUpdateDTO** - For updating villas
+```csharp
+public class VillaUpdateDTO
+{
+    public int Id { get; set; }  // Required for update
+    
+    [MaxLength(50)]
+    [Required]
+    public required string Name { get; set; }
+    
+    public string? Details { get; set; }
+    public double Rate { get; set; }
+    public int Sqft { get; set; }
+    public int Occupancy { get; set; }
+    public string? ImageUrl { get; set; }
+}
+```
+
+---
+
+### 6. **AutoMapper** - Object Mapping
+
+AutoMapper automatically converts between objects.
+
+#### Configuration (in Program.cs):
+```csharp
+builder.Services.AddAutoMapper(o => {
+    o.CreateMap<Villa, VillaDTO>().ReverseMap();
+    o.CreateMap<Villa, VillaCreateDTO>().ReverseMap();
+    o.CreateMap<Villa, VillaUpdateDTO>().ReverseMap();
+});
+```
+
+#### Usage in Controller:
+```csharp
+// Entity → DTO
+var villaDTO = _mapper.Map<VillaDTO>(villa);
+
+// DTO → Entity
+Villa villa = _mapper.Map<Villa>(villaCreateDTO);
+
+// Update existing entity from DTO
+_mapper.Map(villaUpdateDTO, existingVilla);
+```
+
+#### What AutoMapper Does:
+```csharp
+// Without AutoMapper (manual mapping)
+var dto = new VillaDTO {
+    Id = villa.Id,
+    Name = villa.Name,
+    Details = villa.Details,
+    Rate = villa.Rate,
+    Sqft = villa.Sqft,
+    Occupancy = villa.Occupancy,
+    ImageUrl = villa.ImageUrl
+};
+
+// With AutoMapper (automatic)
+var dto = _mapper.Map<VillaDTO>(villa);
+```
+
+---
+
+### 7. **Services** - Business Logic Layer
+
+Services contain reusable business logic.
+
+#### Example: AuthService
+
+**Location:** [Services/AuthService.cs](file:///Users/vaishnavit/Developer/Code/RoyalVilla/RoyalVilla/Services/AuthService.cs)
+
+**Interface:**
+```csharp
+public interface IAuthService
+{
+    Task<UserDTO?> RegisterAsync(RegistrationRequestDTO registrationRequestDTO);
+    Task<LoginResponseDTO?> LoginAsync(LoginRequestDTO loginRequestDTO);
+    Task<bool> IsEmailExistsAsync(string email);
+}
+```
+
+**Implementation:**
+```csharp
+public class AuthService : IAuthService
+{
+    private readonly ApplicationDbContext _db;
+    private readonly IConfiguration _configuration;
+    private readonly IMapper _mapper;
+
+    public AuthService(ApplicationDbContext db, IConfiguration configuration, IMapper mapper)
+    {
+        _db = db;
+        _configuration = configuration;
+        _mapper = mapper;
+    }
+
+    public async Task<LoginResponseDTO?> LoginAsync(LoginRequestDTO loginRequestDTO)
+    {
+        // 1. Find user by email
+        var user = await _db.Users.FirstOrDefaultAsync(
+            u => u.Email.ToLower() == loginRequestDTO.Email.ToLower()
+        );
+
+        // 2. Validate password
+        if (user == null || user.Password != loginRequestDTO.Password) {
+            return null;
+        }
+
+        // 3. Generate JWT token
+        var token = GenerateJwtToken(user);
+
+        // 4. Return response with token
+        return new LoginResponseDTO {
+            UserDTO = _mapper.Map<UserDTO>(user),
+            Token = token
+        };
+    }
+
+    private string GenerateJwtToken(User user)
+    {
+        var key = Encoding.ASCII.GetBytes(_configuration.GetValue<string>("JwtSettings:Secret"));
+        
+        var tokenDescriptor = new SecurityTokenDescriptor {
+            Subject = new ClaimsIdentity(new[] {
+                new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
+                new Claim(ClaimTypes.Email, user.Email),
+                new Claim(ClaimTypes.Name, user.Name),
+                new Claim(ClaimTypes.Role, user.Role)
+            }),
+            Expires = DateTime.UtcNow.AddDays(7),
+            SigningCredentials = new SigningCredentials(
+                new SymmetricSecurityKey(key), 
+                SecurityAlgorithms.HmacSha256Signature
+            )
+        };
+
+        var tokenHandler = new JwtSecurityTokenHandler();
+        var token = tokenHandler.CreateToken(tokenDescriptor);
+        return tokenHandler.WriteToken(token);
+    }
+}
+```
+
+#### Why Use Services?
+1. **Separation of Concerns** - Controllers stay thin
+2. **Reusability** - Multiple controllers can use same service
+3. **Testability** - Easy to unit test business logic
+4. **Dependency Injection** - Loose coupling
+
+---
+
+### 8. **ApiResponse** - Standardized Response Format
+
+**Location:** [Models/DTO/ApiResponse.cs](file:///Users/vaishnavit/Developer/Code/RoyalVilla/RoyalVilla/Models/DTO/ApiResponse.cs)
+
+```csharp
+public class ApiResponse<TData>
+{
+    public bool Success { get; set; }
+    public int StatusCode { get; set; }
+    public string Message { get; set; }
+    public TData? Data { get; set; }
+    public object? Errors { get; set; }
+    public DateTime Timestamp { get; set; }
+}
+```
+
+#### Helper Methods:
+```csharp
+// Success responses
+ApiResponse<VillaDTO>.Ok(data, "Success message")
+ApiResponse<VillaDTO>.CreatedAt(data, "Created successfully")
+ApiResponse<object>.NoContent("Deleted successfully")
+
+// Error responses
+ApiResponse<object>.NotFound("Resource not found")
+ApiResponse<object>.BadRequest("Invalid input", errors)
+ApiResponse<object>.Conflict("Duplicate entry")
+ApiResponse<object>.Error(500, "Server error", details)
+```
+
+#### Example Response JSON:
+```json
+{
+  "success": true,
+  "statusCode": 200,
+  "message": "Records retrieved successfully",
+  "data": {
+    "id": 1,
+    "name": "Royal Villa",
+    "details": "Luxury villa...",
+    "rate": 200,
+    "sqft": 550,
+    "occupancy": 4,
+    "imageUrl": "https://..."
+  },
+  "errors": null,
+  "timestamp": "2026-02-13T07:55:00Z"
+}
+```
+
+---
+
+## Detailed Workflow Example
+
+### Complete Flow: Creating a New Villa
+
+**Request:**
+```http
+POST /api/villa
+Content-Type: application/json
+Authorization: Bearer eyJhbGciOiJIUzI1NiIs...
+
+{
+  "name": "Ocean View Villa",
+  "details": "Beautiful ocean view",
+  "rate": 350,
+  "sqft": 800,
+  "occupancy": 6,
+  "imageUrl": "https://example.com/image.jpg"
+}
+```
+
+**Step-by-Step Flow:**
+
+#### 1. **HTTP Request Arrives**
+- ASP.NET Core receives the request
+- Routes to `VillaController.CreateVilla`
+
+#### 2. **Middleware Pipeline**
+```
+Request → HTTPS Redirect → Authentication → Authorization → Controller
+```
+
+**Authentication Middleware:**
+- Extracts JWT token from `Authorization` header
+- Validates token signature
+- Extracts user claims (ID, email, role)
+- Sets `HttpContext.User`
+
+**Authorization Middleware:**
+- Checks if user has required role (if `[Authorize]` attribute present)
+
+#### 3. **Model Binding**
+- ASP.NET Core deserializes JSON to [VillaCreateDTO](file:///Users/vaishnavit/Developer/Code/RoyalVilla/RoyalVilla/Models/DTO/VillaCreateDTO.cs#10-28)
+- Validates data annotations (`[Required]`, `[MaxLength]`)
+
+#### 4. **Controller Method Executes**
+
+```csharp
+public async Task<ActionResult<ApiResponse<VillaDTO>>> CreateVilla(VillaCreateDTO villaDTO)
+{
+    try {
+        // Step 4a: Validate input
+        if (villaDTO == null) {
+            return BadRequest(ApiResponse<object>.BadRequest("Villa data is required"));
+        }
+
+        // Step 4b: Check for duplicates
+        var duplicateVilla = await _db.Villa
+            .FirstOrDefaultAsync(u => u.Name.ToLower() == villaDTO.Name.ToLower());
+
+        if (duplicateVilla != null) {
+            return Conflict(ApiResponse<object>.Conflict(
+                $"A villa with the name '{villaDTO.Name}' already exists"
+            ));
+        }
+
+        // Step 4c: Map DTO to Entity
+        Villa villa = _mapper.Map<Villa>(villaDTO);
+
+        // Step 4d: Add to database
+        await _db.Villa.AddAsync(villa);
+        await _db.SaveChangesAsync();
+
+        // Step 4e: Map Entity back to DTO
+        var response = ApiResponse<VillaDTO>.CreatedAt(
+            _mapper.Map<VillaDTO>(villa), 
+            "Villa Created successfully"
+        );
+
+        // Step 4f: Return 201 Created
+        return CreatedAtAction(
+            nameof(GetVillaById),
+            new { id = villa.Id },
+            response
+        );
+    }
+    catch (Exception ex) {
+        var response = ApiResponse<object>.Error(500, 
+            $"An error occurred while creating the villa : {ex.Message}", 
+            ex.Message
+        );
+        return StatusCode(500, response);
+    }
+}
+```
+
+#### 5. **Entity Framework Operations**
+
+**AddAsync:**
+```csharp
+await _db.Villa.AddAsync(villa);
+```
+- Adds entity to EF's change tracker
+- State: `Added`
+- No database interaction yet
+
+**SaveChangesAsync:**
+```csharp
+await _db.SaveChangesAsync();
+```
+- EF generates SQL INSERT statement
+- Executes transaction
+- Returns generated ID
+- Updates entity with ID
+
+**Generated SQL:**
+```sql
+INSERT INTO Villa (Name, Details, Rate, Sqft, Occupancy, ImageUrl, CreatedDate)
+VALUES ('Ocean View Villa', 'Beautiful ocean view', 350, 800, 6, 'https://...', '2026-02-13 07:55:00');
+
+SELECT LAST_INSERT_ID();
+```
+
+#### 6. **Response**
+
+**HTTP Response:**
+```http
+HTTP/1.1 201 Created
+Location: /api/villa/6
+Content-Type: application/json
+
+{
+  "success": true,
+  "statusCode": 201,
+  "message": "Villa Created successfully",
+  "data": {
+    "id": 6,
+    "name": "Ocean View Villa",
+    "details": "Beautiful ocean view",
+    "rate": 350,
+    "sqft": 800,
+    "occupancy": 6,
+    "imageUrl": "https://example.com/image.jpg"
+  },
+  "errors": null,
+  "timestamp": "2026-02-13T07:55:00Z"
+}
+```
+
+---
+
+## Key Concepts Explained
+
+### 1. **Dependency Injection (DI)**
+
+**What is it?**
+- Design pattern where objects receive dependencies from external source
+- Instead of creating dependencies, they are "injected"
+
+**Example:**
+```csharp
+// ❌ Without DI (tight coupling)
+public class VillaController
+{
+    private ApplicationDbContext _db = new ApplicationDbContext();
+}
+
+// ✅ With DI (loose coupling)
+public class VillaController
+{
+    private readonly ApplicationDbContext _db;
+    
+    public VillaController(ApplicationDbContext db)  // Injected
+    {
+        _db = db;
+    }
+}
+```
+
+**Benefits:**
+- Easier testing (can inject mock objects)
+- Loose coupling
+- Centralized configuration
+
+**Service Lifetimes:**
+- **Transient** - New instance every time
+- **Scoped** - One instance per HTTP request
+- **Singleton** - One instance for entire application
+
+### 2. **Async/Await**
+
+**Why use async?**
+- Non-blocking I/O operations
+- Better scalability
+- Frees up threads while waiting for database/network
+
+**Example:**
+```csharp
+// Synchronous (blocks thread)
+var villa = _db.Villa.FirstOrDefault(v => v.Id == id);
+
+// Asynchronous (non-blocking)
+var villa = await _db.Villa.FirstOrDefaultAsync(v => v.Id == id);
+```
+
+### 3. **LINQ (Language Integrated Query)**
+
+**What is it?**
+- Query syntax integrated into C#
+- Works with any data source (databases, collections, XML)
+
+**Examples:**
+```csharp
+// Get all villas
+var villas = await _db.Villa.ToListAsync();
+
+// Filter
+var villa = await _db.Villa.FirstOrDefaultAsync(v => v.Id == id);
+
+// Where clause
+var luxuryVillas = await _db.Villa
+    .Where(v => v.Rate > 500)
+    .ToListAsync();
+
+// Order by
+var sortedVillas = await _db.Villa
+    .OrderByDescending(v => v.Rate)
+    .ToListAsync();
+```
+
+**EF Core translates to SQL:**
+```csharp
+_db.Villa.Where(v => v.Rate > 500).ToListAsync()
+```
+↓
+```sql
+SELECT * FROM Villa WHERE Rate > 500;
+```
+
+### 4. **JWT Authentication**
+
+**What is JWT?**
+- JSON Web Token
+- Stateless authentication
+- Contains user claims (ID, email, role)
+
+**Structure:**
+```
+eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c
+
+Header.Payload.Signature
+```
+
+**Flow:**
+1. User logs in with credentials
+2. Server validates and generates JWT
+3. Client stores token (localStorage, cookie)
+4. Client sends token in `Authorization` header
+5. Server validates token on each request
+
+**Claims in Token:**
+```json
+{
+  "nameid": "123",
+  "email": "user@example.com",
+  "name": "John Doe",
+  "role": "Admin",
+  "exp": 1707825600
+}
+```
+
+### 5. **Entity Framework Change Tracking**
+
+**How it works:**
+```csharp
+// 1. Load entity (EF starts tracking)
+var villa = await _db.Villa.FirstOrDefaultAsync(v => v.Id == 1);
+// State: Unchanged
+
+// 2. Modify property
+villa.Rate = 250;
+// State: Modified (EF detects change)
+
+// 3. Save changes
+await _db.SaveChangesAsync();
+// EF generates: UPDATE Villa SET Rate = 250 WHERE Id = 1
+```
+
+**No need to call Update():**
+```csharp
+// ❌ Unnecessary
+_db.Villa.Update(villa);
+await _db.SaveChangesAsync();
+
+// ✅ EF tracks changes automatically
+villa.Rate = 250;
+await _db.SaveChangesAsync();
+```
+
+---
+
+## Summary
+
+### Request Flow Recap
+
+```
+1. Client sends HTTP request
+   ↓
+2. ASP.NET Core Pipeline
+   - HTTPS Redirect
+   - Authentication (JWT validation)
+   - Authorization (role check)
+   ↓
+3. Controller receives request
+   - Validates input
+   - Calls DbContext or Service
+   ↓
+4. AutoMapper (if needed)
+   - Converts DTO ↔ Entity
+   ↓
+5. Entity Framework Core
+   - Translates LINQ to SQL
+   - Executes database query
+   - Tracks changes
+   ↓
+6. Database (MySQL)
+   - Executes SQL
+   - Returns data
+   ↓
+7. Controller formats response
+   - Maps to DTO
+   - Wraps in ApiResponse
+   ↓
+8. Client receives JSON response
+```
+
+### Key Takeaways
+
+1. **Controllers** = Handle HTTP requests/responses
+2. **Services** = Business logic and reusable operations
+3. **Entities** = Database tables (mapped by EF Core)
+4. **DTOs** = API contracts (what clients send/receive)
+5. **AutoMapper** = Automatic object mapping
+6. **DbContext** = Database session and query interface
+7. **Dependency Injection** = Loose coupling and testability
+8. **JWT** = Stateless authentication
+9. **Middleware** = Request processing pipeline
+
+This architecture provides:
+- ✅ **Separation of concerns**
+- ✅ **Testability**
+- ✅ **Maintainability**
+- ✅ **Scalability**
+- ✅ **Security**
