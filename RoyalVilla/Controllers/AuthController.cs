@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using RoyalVilla.Models.DTO;
+using RoyalVilla.Dto;
 using RoyalVilla.Services;
 
 namespace RoyalVilla.Controllers

@@ -4,7 +4,7 @@ using AutoMapper;
 using Microsoft.EntityFrameworkCore;
 using RoyalVilla.Data;
 using RoyalVilla.Models;
-using RoyalVilla.Models.DTO;
+using RoyalVilla.Dto;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 

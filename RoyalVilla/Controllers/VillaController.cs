@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using RoyalVilla.Data;
 using RoyalVilla.Models;
-using RoyalVilla.Models.DTO;
+using RoyalVilla.Dto;
 
 namespace RoyalVilla.Controllers
 {

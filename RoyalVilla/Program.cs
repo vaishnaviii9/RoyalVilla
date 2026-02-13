@@ -1,6 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using RoyalVilla.Data;
-using RoyalVilla.Models.DTO;
+using RoyalVilla.Dto;
 using Scalar.AspNetCore;
 using RoyalVilla.Models;
 using RoyalVilla.Services;
