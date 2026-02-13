@@ -11,7 +11,7 @@ using RoyalVilla.Models.DTO;
 
 namespace RoyalVilla.Controllers
 {
-    [Route("api/vill-amenities")]
+    [Route("api/villa-amenities")]
     [ApiController]
     public class VillaAmenitiesController : ControllerBase
     {
@@ -25,7 +25,7 @@ namespace RoyalVilla.Controllers
         }
 
         [HttpGet]
-         [ProducesResponseType(typeof(ApiResponse<IEnumerable<VillaDTO>>),StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<IEnumerable<VillaAmenitiesDTO>>),StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse<IEnumerable<object>>),StatusCodes.Status500InternalServerError)]
         public async Task<ActionResult<ApiResponse<IEnumerable<VillaAmenitiesDTO>>>> GetVillaAmenities()
         {
@@ -37,5 +37,72 @@ namespace RoyalVilla.Controllers
             return Ok(response);
         }
 
+        [HttpGet("{id:int}")]
+        [ProducesResponseType(typeof(ApiResponse<VillaAmenitiesDTO>),StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<IEnumerable<object>>), StatusCodes.Status500InternalServerError)]
+        [ProducesResponseType(typeof(ApiResponse<IEnumerable<object>>), StatusCodes.Status404NotFound)]
+        public async Task<ActionResult<ApiResponse<VillaAmenitiesDTO>>> GetVillaAmenitiesById(int id)
+        {
+            try
+            {
+                if( id == 0)
+                {
+                    return NotFound(ApiResponse<object>.NotFound("Villa Amenities Id must be greater than zero"));
+                }
+
+                var villaAmenities = await _db.VillaAmenities.FirstOrDefaultAsync(u=> u.Id== id);
+
+                if(villaAmenities == null)
+                {
+                    return NotFound(ApiResponse<object>.NotFound($"Villa Amenities with Id: {id} not found"));
+                }
+
+                return Ok(ApiResponse<VillaAmenitiesDTO>.Ok(_mapper.Map<VillaAmenitiesDTO>(villaAmenities), "Records retrieved successfully"));
+            }
+
+            catch (System.Exception ex)
+            {
+                
+                var response = ApiResponse<object>.Error(500, $"An error occurred while retrieving the villa amenities: {ex.Message} ", ex.Message);
+                return StatusCode(500,response);
+            }
+        }
+
+        [HttpPost]
+        [ProducesResponseType(typeof(ApiResponse<VillaAmenitiesDTO>),StatusCodes.Status201Created)]
+        [ProducesResponseType(typeof(ApiResponse<IEnumerable<object>>), StatusCodes.Status500InternalServerError)]
+        [ProducesResponseType(typeof(ApiResponse<IEnumerable<object>>), StatusCodes.Status409Conflict)]
+        [ProducesResponseType(typeof(ApiResponse<IEnumerable<object>>), StatusCodes.Status400BadRequest)]
+        public async Task<ActionResult<ApiResponse<VillaAmenitiesDTO>>> CreateVillaAmenities(VillaAmenitiesCreateDTO villaAmenitiesDTO)
+        {
+            try
+            {
+                if(villaAmenitiesDTO == null)
+                {
+                    return BadRequest(ApiResponse<object>.BadRequest("Villa Amenities data is required"));
+                }
+
+                var villaExists = await _db.Villa.FirstOrDefaultAsync(u => u.Id == villaAmenitiesDTO.VillaId);
+
+                if(villaExists == null)
+                {
+                    return Conflict(ApiResponse<object>.Conflict($"Villa with Id '{villaAmenitiesDTO.VillaId}' doesnot exists"));
+                }
+
+                VillaAmenities villaAmenities = _mapper.Map<VillaAmenities>(villaAmenitiesDTO);
+                villaAmenities.CreatedDate = DateTime.Now;
+                await _db.VillaAmenities.AddAsync(villaAmenities);
+                await _db.SaveChangesAsync();
+
+                var response = ApiResponse<VillaAmenitiesDTO>.CreatedAt(_mapper.Map<VillaAmenitiesDTO>(villaAmenities),"Villa Amenities created successfully");
+                return CreatedAtAction(nameof(CreateVillaAmenities), new {id= villaAmenities.Id}, response);
+            }
+            catch (System.Exception ex)
+            {
+                
+                var response = ApiResponse<object>.Error(500, $"An error occurred while retrieving the villa amenities: {ex.Message} ", ex.Message);
+                return StatusCode(500,response);
+            }
+        }
     }
 }
