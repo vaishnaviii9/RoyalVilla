@@ -10,22 +10,30 @@ namespace RoyalVillaWeb.Services
 {
     public class VillaServices: BaseServices, IVillaServices
     {
-        private readonly IHttpClientFactory _clientFactory;
         private readonly string _villaUrl;
         private const string APIEndpoint ="/api/villa";
         public VillaServices(IHttpClientFactory httpClient, IConfiguration configuration) : base(httpClient)
         {
-            _clientFactory = httpClient;
             _villaUrl = configuration.GetValue<string>("ServiceUrls:VillaAPI");
         }
         public Task<T?> GetAllAsync<T>(string token)
         {
-            throw new NotImplementedException();
+           return SendAsync<T>(new ApiRequest
+            {
+                ApiType = StaticDetails.ApiType.GET,
+                Url = $"{_villaUrl}{APIEndpoint}",
+                Token = token
+            });
         }
 
         public Task<T?> GetAsync<T>(int id, string token)
         {
-            throw new NotImplementedException();
+           return SendAsync<T>(new ApiRequest
+            {
+                ApiType = StaticDetails.ApiType.POST,
+                Url = $"{_villaUrl}{APIEndpoint}/{id}",
+                Token = token
+            });
         }
         public Task<T?> CreateAsync<T>(VillaCreateDTO dto,string token)
         {
@@ -49,7 +57,13 @@ namespace RoyalVillaWeb.Services
         }
         public Task<T?> DeleteAsync<T>(int id, string token)
         {
-            throw new NotImplementedException();
+            return SendAsync<T>(new ApiRequest
+            {
+                ApiType = StaticDetails.ApiType.DELETE,
+                Data = dto,
+                Url = $"{_villaUrl}{APIEndpoint}/{id}",
+                Token = token
+            });
         }
     }
 }
