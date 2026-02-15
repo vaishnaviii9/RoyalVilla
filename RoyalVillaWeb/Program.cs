@@ -1,7 +1,21 @@
+using RoyalVillaWeb.Services.IServices;
+using RoyalVillaWeb.Services;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddControllersWithViews();
+
+// Register HttpClient factory
+builder.Services.AddHttpClient<IVillaServices, VillaServices>();
+builder.Services.AddScoped<IVillaServices, VillaServices>();
+builder.Services.AddScoped<IBaseServices, BaseServices>();
+
+// Configure named HttpClient for RoyalVillaAPI
+builder.Services.AddHttpClient("RoyalVillaAPI", client =>
+{
+    client.BaseAddress = new Uri(builder.Configuration.GetValue<string>("ServiceUrls:VillaAPI"));
+});
 
 var app = builder.Build();
 

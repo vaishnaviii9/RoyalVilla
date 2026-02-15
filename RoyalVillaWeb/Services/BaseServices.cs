@@ -1,6 +1,6 @@
 using System.Net.Http.Json;
 using System.Text.Json;
-using RoyalVilla.DTO;
+using RoyalVilla.Dto;
 using RoyalVillaWeb.Models;
 using RoyalVillaWeb.Services.IServices;
 
@@ -23,7 +23,7 @@ namespace RoyalVillaWeb.Services
             this.ResponseModel = new();
             _httpClient = httpClient;
         }
-       public Task<T?> SendAsync<T>(ApiRequest apiRequest)
+       public async Task<T?> SendAsync<T>(ApiRequest apiRequest)
         {
             try
             {
@@ -57,10 +57,10 @@ namespace RoyalVillaWeb.Services
         {
             return apiType switch
             {
-              StaticDetails.ApiType.POST => HttpMethod.POST,
-              StaticDetails.ApiType.PUT => HttpMethod.PUT,
-              StaticDetails.ApiType.DELETE => HttpMethod.DELETE,
-              _ => HttpMethod.GET,
+              StaticDetails.ApiType.POST => HttpMethod.Post,
+              StaticDetails.ApiType.PUT => HttpMethod.Put,
+              StaticDetails.ApiType.DELETE => HttpMethod.Delete,
+              _ => HttpMethod.Get,
             };
         }
     }
