@@ -18,7 +18,7 @@ builder.Services.AddAutoMapper(o =>
 
 
 //Add HTTP Client
-builder.Services.AddHttpClient("RoyalAPI",client =>
+builder.Services.AddHttpClient("RoyalVillaAPI",client =>
 {
     var villaAPIUrl =builder.Configuration.GetValue<string>("ServiceUrls:VillaAPI");
     client.BaseAddress = new Uri(villaAPIUrl ?? string.Empty);
