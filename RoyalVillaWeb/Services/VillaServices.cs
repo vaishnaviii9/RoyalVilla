@@ -10,18 +10,17 @@ namespace RoyalVillaWeb.Services
 {
     public class VillaServices: BaseServices, IVillaServices
     {
-        private readonly string _villaUrl;
-        private const string APIEndpoint ="/api/villa";
+        private const string APIEndpoint = "/api/villa";
         public VillaServices(IHttpClientFactory httpClient, IConfiguration configuration) : base(httpClient)
         {
-            _villaUrl = configuration.GetValue<string>("ServiceUrls:VillaAPI");
+           
         }
         public Task<T?> GetAllAsync<T>(string token)
         {
            return SendAsync<T>(new ApiRequest
             {
                 ApiType = StaticDetails.ApiType.GET,
-                Url = $"{_villaUrl}{APIEndpoint}",
+                Url =APIEndpoint,
                 Token = token
             });
         }
@@ -31,7 +30,7 @@ namespace RoyalVillaWeb.Services
            return SendAsync<T>(new ApiRequest
             {
                 ApiType = StaticDetails.ApiType.POST,
-                Url = $"{_villaUrl}{APIEndpoint}/{id}",
+                Url =$"{APIEndpoint}/{id}",
                 Token = token
             });
         }
@@ -41,7 +40,7 @@ namespace RoyalVillaWeb.Services
             {
                 ApiType = StaticDetails.ApiType.POST,
                 Data = dto,
-                Url =$"{_villaUrl}{APIEndpoint}",
+                Url =APIEndpoint,
                 Token = token
             });
         }
@@ -51,7 +50,7 @@ namespace RoyalVillaWeb.Services
             {
                 ApiType = StaticDetails.ApiType.PUT,
                 Data = dto,
-                Url = $"{_villaUrl}{APIEndpoint}/{dto.Id}",
+                Url = $"{APIEndpoint}/{dto.Id}",
                 Token = token
             });
         }
@@ -60,8 +59,8 @@ namespace RoyalVillaWeb.Services
             return SendAsync<T>(new ApiRequest
             {
                 ApiType = StaticDetails.ApiType.DELETE,
-                Data = dto,
-                Url = $"{_villaUrl}{APIEndpoint}/{id}",
+                // Data = dto,
+                Url = $"{APIEndpoint}/{id}",
                 Token = token
             });
         }

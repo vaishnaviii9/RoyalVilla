@@ -77,6 +77,9 @@ builder.Services.AddSwaggerGen(c =>
     });
 });
 
+//Add CORS
+builder.Services.AddCors();
+
 // Add DbContext with MySQL
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseMySql(
@@ -115,6 +118,8 @@ if (app.Environment.IsDevelopment())
             .WithDefaultHttpClient(ScalarTarget.CSharp, ScalarClient.HttpClient);
     });
 }
+
+app.UseCors(o=>o.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod().WithExposedHeaders("*"));
 
 app.UseHttpsRedirection();
 
