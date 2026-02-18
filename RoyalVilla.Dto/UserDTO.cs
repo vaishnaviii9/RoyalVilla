@@ -5,11 +5,11 @@ namespace RoyalVilla.Dto
     {
         public int Id { get; set; }
 
-        public string Email { get; set; } = default;
+        public string Email { get; set; } = string.Empty;
 
-        public  string Name { get; set; } = default;
+        public  string Name { get; set; } = string.Empty;
 
-        public string Role { get; set; } = default;
+        public string Role { get; set; } = string.Empty;
 
     }
 }

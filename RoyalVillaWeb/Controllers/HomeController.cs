@@ -4,13 +4,14 @@ using RoyalVillaWeb.Models;
 using RoyalVillaWeb.Services;
 using RoyalVillaWeb.Services.IServices;
 using AutoMapper;
+using RoyalVilla.Dto;
 
 namespace RoyalVillaWeb.Controllers;
 
 public class HomeController : Controller
 {
     private readonly IVillaServices _villaService;
-    private readonly IMapper _mappper;
+    private readonly IMapper _mapper;
 
     public HomeController(IVillaServices villaServices, IMapper mapper)
     {
@@ -18,7 +19,7 @@ public class HomeController : Controller
         _villaService = villaServices;
     }
 
-    public IActionResult Index()
+    public async Task<IActionResult> Index()
     {
         List<VillaDTO> villaList = new();
         try

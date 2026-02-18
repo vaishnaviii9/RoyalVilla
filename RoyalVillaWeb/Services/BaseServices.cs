@@ -28,9 +28,11 @@ namespace RoyalVillaWeb.Services
             try
             {
                 var client = _httpClient.CreateClient("RoyalVillaAPI");
+                if (string.IsNullOrEmpty(apiRequest.Url))
+                    throw new ArgumentNullException(nameof(apiRequest.Url), "API request URL cannot be null or empty.");
                 var message = new HttpRequestMessage
                 {
-                    RequestUri = new Uri(apiRequest.Url , uriKind:UriKind.Relative),
+                    RequestUri = new Uri(apiRequest.Url, uriKind: UriKind.Relative),
                     Method = GetHttpMethod(apiRequest.ApiType),
                 };
 
