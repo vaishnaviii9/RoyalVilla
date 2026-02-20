@@ -29,7 +29,7 @@ namespace RoyalVillaWeb.Services
         {
            return SendAsync<T>(new ApiRequest
             {
-                ApiType = StaticDetails.ApiType.POST,
+                ApiType = StaticDetails.ApiType.GET,
                 Url =$"{APIEndpoint}/{id}",
                 Token = token
             });
