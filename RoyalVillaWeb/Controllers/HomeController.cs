@@ -26,7 +26,7 @@ public class HomeController : Controller
         List<VillaDTO> villaList = new();
         try
         {
-            var response = await _villaService.GetAllAsync<ApiResponse<List<VillaDTO>>>("");
+            var response = await _villaService.GetAllAsync<ApiResponse<List<VillaDTO>>>();
             if(response!=null && response.Success && response.Data != null)
             {
                 villaList = response.Data;

@@ -53,6 +53,7 @@ namespace RoyalVillaWeb.Controllers
                     var principal = new ClaimsPrincipal(identity);
                     await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, principal);
 
+                    HttpContext.Session.SetString(StaticDetails.SessionToken,model.Token);
                     return RedirectToAction("Index", "Home");
                 }
             }

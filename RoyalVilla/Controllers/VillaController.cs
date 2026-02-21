@@ -11,7 +11,6 @@ namespace RoyalVilla.Controllers
 {
     [Route("api/villa")]
     [ApiController]
-    [Authorize]
     // [Authorize(Roles ="Customer, Admin")]
     public class VillaController : ControllerBase
     {
@@ -70,6 +69,7 @@ namespace RoyalVilla.Controllers
         }
 
         [HttpPost]
+        [Authorize(Roles ="Admin")]
         [ProducesResponseType(typeof(ApiResponse<VillaDTO>),StatusCodes.Status201Created)]
         [ProducesResponseType(typeof(ApiResponse<IEnumerable<object>>),StatusCodes.Status500InternalServerError)]
         [ProducesResponseType(typeof(ApiResponse<IEnumerable<object>>),StatusCodes.Status409Conflict)]
@@ -108,6 +108,7 @@ namespace RoyalVilla.Controllers
         }
 
         [HttpPut("{id:int}")]
+        [Authorize(Roles ="Admin")]
         [ProducesResponseType(typeof(ApiResponse<VillaDTO>),StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse<IEnumerable<object>>),StatusCodes.Status500InternalServerError)]
         [ProducesResponseType(typeof(ApiResponse<IEnumerable<object>>),StatusCodes.Status409Conflict)]
@@ -160,6 +161,7 @@ namespace RoyalVilla.Controllers
         }
 
         [HttpDelete("{id:int}")]
+        [Authorize(Roles ="Admin")]
         [ProducesResponseType(typeof(ApiResponse<object>),StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse<IEnumerable<object>>),StatusCodes.Status500InternalServerError)]
         [ProducesResponseType(typeof(ApiResponse<IEnumerable<object>>),StatusCodes.Status404NotFound)]
