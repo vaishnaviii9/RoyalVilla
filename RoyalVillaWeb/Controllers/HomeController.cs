@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using RoyalVillaWeb.Models;
 using RoyalVillaWeb.Services;
 using RoyalVillaWeb.Services.IServices;
@@ -19,6 +20,7 @@ public class HomeController : Controller
         _villaService = villaServices;
     }
 
+    // [Authorize]
     public async Task<IActionResult> Index()
     {
         List<VillaDTO> villaList = new();

@@ -46,7 +46,6 @@ namespace RoyalVillaWeb.Services
             }
 
             var apiResponse = await client.SendAsync(message);
-            apiResponse.EnsureSuccessStatusCode();
 
             return await apiResponse.Content.ReadFromJsonAsync<T>(JsonOptions);
         }
