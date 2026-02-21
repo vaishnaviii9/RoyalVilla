@@ -10,7 +10,7 @@ namespace RoyalVillaWeb.Services.IServices
     
     {
         Task<T?> LoginAsync<T>(LoginRequestDTO loginRequestDTO);
-        Task<T?> RegisterAsync<T>(RegisterRequestDTO registerRequestDTO);
+        Task<T?> RegisterAsync<T>(RegistrationRequestDTO registrationRequestDTO);
        
     }
 }

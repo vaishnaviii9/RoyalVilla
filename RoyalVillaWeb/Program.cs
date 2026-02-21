@@ -27,6 +27,7 @@ builder.Services.AddHttpClient("RoyalVillaAPI",client =>
 });
 
 builder.Services.AddScoped<IVillaServices, VillaServices>();
+builder.Services.AddScoped<IAuthServices, AuthServices>();
 
 var app = builder.Build();
 

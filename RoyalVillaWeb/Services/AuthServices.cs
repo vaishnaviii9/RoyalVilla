@@ -10,7 +10,7 @@ namespace RoyalVillaWeb.Services
 {
     public class AuthServices: BaseServices, IAuthServices
     {
-        private const string APIEndpoint = "/api/villa";
+        private const string APIEndpoint = "/api/auth";
         public AuthServices(IHttpClientFactory httpClient, IConfiguration configuration) : base(httpClient)
         {
            
@@ -18,11 +18,24 @@ namespace RoyalVillaWeb.Services
 
         public Task<T?> LoginAsync<T>(LoginRequestDTO loginRequestDTO)
         {
-            throw new NotImplementedException();
+            
+            return SendAsync<T>(new ApiRequest
+            {
+                ApiType = StaticDetails.ApiType.POST,
+                Data = loginRequestDTO,
+                Url =APIEndpoint + "/login",
+                Token = null
+            });
         }
-        public Task<T?> RegisterAsync<T>(RegisterRequestDTO registerRequestDTO)
+        public Task<T?> RegisterAsync<T>(RegistrationRequestDTO registrationRequestDTO)
         {
-            throw new NotImplementedException();
+           return SendAsync<T>(new ApiRequest
+            {
+                ApiType = StaticDetails.ApiType.POST,
+                Data = registrationRequestDTO,
+                Url =APIEndpoint + "/register",
+                Token = null
+            });
         }
 }
 }
