@@ -9,21 +9,21 @@ namespace RoyalVillaWeb.Services
     public class BaseServices : IBaseServices
     {
 
-        public IHttpClientFactory _httpClient {get; set;}
+        public IHttpClientFactory _httpClient { get; set; }
 
         private static readonly JsonSerializerOptions JsonOptions = new()
         {
             PropertyNameCaseInsensitive = true
         };
 
-        public ApiResponse<object> ResponseModel {get; set;}
+        public ApiResponse<object> ResponseModel { get; set; }
 
         public BaseServices(IHttpClientFactory httpClient)
         {
             this.ResponseModel = new();
             _httpClient = httpClient;
         }
-       public async Task<T?> SendAsync<T>(ApiRequest apiRequest)
+        public async Task<T?> SendAsync<T>(ApiRequest apiRequest)
         {
             var client = _httpClient.CreateClient("RoyalVillaAPI");
             if (string.IsNullOrEmpty(apiRequest.Url))
@@ -47,17 +47,33 @@ namespace RoyalVillaWeb.Services
 
             var apiResponse = await client.SendAsync(message);
 
-            return await apiResponse.Content.ReadFromJsonAsync<T>(JsonOptions);
+            // Check if response was successful
+            if (!apiResponse.IsSuccessStatusCode)
+            {
+                var errorContent = await apiResponse.Content.ReadAsStringAsync();
+                Console.WriteLine($"API Error {apiResponse.StatusCode}: {errorContent}");
+                return default;
+            }
+
+            // Check if body is empty
+            var content = await apiResponse.Content.ReadAsStringAsync();
+            if (string.IsNullOrWhiteSpace(content))
+            {
+                Console.WriteLine("API returned empty response body.");
+                return default;
+            }
+
+            return JsonSerializer.Deserialize<T>(content, JsonOptions);
         }
 
         private static HttpMethod GetHttpMethod(StaticDetails.ApiType apiType)
         {
             return apiType switch
             {
-              StaticDetails.ApiType.POST => HttpMethod.Post,
-              StaticDetails.ApiType.PUT => HttpMethod.Put,
-              StaticDetails.ApiType.DELETE => HttpMethod.Delete,
-              _ => HttpMethod.Get,
+                StaticDetails.ApiType.POST => HttpMethod.Post,
+                StaticDetails.ApiType.PUT => HttpMethod.Put,
+                StaticDetails.ApiType.DELETE => HttpMethod.Delete,
+                _ => HttpMethod.Get,
             };
         }
     }
