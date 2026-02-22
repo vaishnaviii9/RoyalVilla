@@ -7,9 +7,9 @@ using RoyalVilla.Data;
 using RoyalVilla.Models;
 using RoyalVilla.Dto;
 
-namespace RoyalVilla.Controllers
+namespace RoyalVilla.Controllers.v1
 {
-    [Route("api/villa")]
+    [Route("api/v1/villa")]
     [ApiController]
     // [Authorize(Roles ="Customer, Admin")]
     public class VillaController : ControllerBase
