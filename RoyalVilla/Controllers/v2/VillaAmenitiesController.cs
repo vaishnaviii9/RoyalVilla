@@ -10,11 +10,11 @@ using RoyalVilla.Models;
 using RoyalVilla.Dto;
 using Asp.Versioning;
 
-namespace RoyalVilla.Controllers.v1
+namespace RoyalVilla.Controllers.v2
 {
     [Route("api/v{version:apiVersion}/villa-amenities")]
     // [ApiExplorerSettings(GroupName ="v1")]
-    [ApiVersion("1.0")]
+    [ApiVersion("2.0")]
     [ApiController]
     public class VillaAmenitiesController : ControllerBase
     {
