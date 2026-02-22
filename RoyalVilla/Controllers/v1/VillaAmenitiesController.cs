@@ -8,11 +8,14 @@ using Microsoft.EntityFrameworkCore;
 using RoyalVilla.Data;
 using RoyalVilla.Models;
 using RoyalVilla.Dto;
+using Asp.Versioning;
 
 namespace RoyalVilla.Controllers.v1
 {
-    [Route("api/v1/villa-amenities")]
-    [ApiExplorerSettings(GroupName ="v1")]
+    [Route("api/v{version:apiVersion}/villa-amenities")]
+    // [ApiExplorerSettings(GroupName ="v1")]
+    [ApiVersion("1.0")]
+    [ApiVersion("2.0")]
     [ApiController]
     public class VillaAmenitiesController : ControllerBase
     {

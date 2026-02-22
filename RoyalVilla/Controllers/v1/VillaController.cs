@@ -6,11 +6,13 @@ using Microsoft.EntityFrameworkCore;
 using RoyalVilla.Data;
 using RoyalVilla.Models;
 using RoyalVilla.Dto;
+using Asp.Versioning;
 
 namespace RoyalVilla.Controllers.v1
 {
-    [Route("api/v1/villa")]
-    [ApiExplorerSettings(GroupName ="v1")]
+    [Route("api/v{version:apiVersion}/villa")]
+    [ApiVersion("1.0")]
+    // [ApiExplorerSettings(GroupName ="v1")]
     [ApiController]
     // [Authorize(Roles ="Customer, Admin")]
     public class VillaController : ControllerBase

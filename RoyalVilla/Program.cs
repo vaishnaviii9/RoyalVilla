@@ -9,6 +9,8 @@ using System.Text;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.AspNetCore.OpenApi;
 using Microsoft.OpenApi;
+using Asp.Versioning;
+using Asp.Versioning.ApiExplorer;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -37,47 +39,16 @@ builder.Services.AddAuthentication(option =>
 
 });
 
-// Add services to the container
-builder.Services.AddControllers();
-
-//OpenApi
-// builder.Services.AddOpenApi(options =>
-// {
-//     options.AddDocumentTransformer((document, context, cancellationToken) =>
-//     {
-//         document.Components ??= new();
-//         document.Components.SecuritySchemes = new Dictionary<string, IOpenApiSecurityScheme>
-//         {
-//             ["Bearer"]= new OpenApiSecurityScheme
-//             {
-//                 Type = SecuritySchemeType.Http,
-//                 Scheme = "bearer",
-//                 BearerFormat ="JWT",
-//                 Description = "Enter JWT Bearer Token"
-//             }
-//         };
-//         document.Security = [
-//             new OpenApiSecurityRequirement{
-//                { new OpenApiSecuritySchemeReference("Bearer"), new List<string>()}
-//             }
-//         ];
-//         return Task.CompletedTask;
-//     });
-// });
-
-builder.Services.AddOpenApi("v1");
-builder.Services.AddOpenApi("v2");
-
-// Add OpenAPI with Swagger
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen(c =>
+builder.Services.AddApiVersioning(options =>
 {
-    c.SwaggerDoc("v1", new()
-    {
-        Version = "v1",
-        Title = "Royal Villa API",
-        Description = "API for managing Royal Villa properties"
-    });
+    options.AssumeDefaultVersionWhenUnspecified = true;
+    options.DefaultApiVersion = new ApiVersion(1, 0);
+    options.ReportApiVersions = true;
+
+}).AddApiExplorer(option =>
+{
+    option.GroupNameFormat= "'v'VVV";
+    option.SubstituteApiVersionInUrl = true;
 });
 
 //Add CORS
@@ -89,6 +60,68 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
         builder.Configuration.GetConnectionString("DefaultConnection"),
         ServerVersion.AutoDetect(builder.Configuration.GetConnectionString("DefaultConnection"))
     ));
+// Add services to the container
+
+
+builder.Services.AddControllers();
+
+
+var builderProvider = builder.Services.BuildServiceProvider().GetRequiredService<IApiVersionDescriptionProvider>();
+
+
+foreach (var description in builderProvider.ApiVersionDescriptions)
+{
+    var versionName = description.GroupName;
+    var versionNumber = description.ApiVersion.ToString();
+    var displayName = $"Demo API -- {versionNumber}";
+    // OpenApi
+    builder.Services.AddOpenApi(versionName,options =>
+    {
+        options.AddDocumentTransformer((document, context, cancellationToken) =>
+        {
+            document.Info = new OpenApiInfo
+            {
+                Title="Demo Royal API",
+                Version= versionName,
+                Description = displayName,
+                Contact = new OpenApiContact
+                {
+                    Name = "Vaishnavi Tonpe",
+                    Email= "vaishnavitonpe0@gmail.com"
+                }
+            };
+            document.Components ??= new();
+            document.Components.SecuritySchemes = new Dictionary<string, IOpenApiSecurityScheme>
+            {
+                ["Bearer"] = new OpenApiSecurityScheme
+                {
+                    Type = SecuritySchemeType.Http,
+                    Scheme = "bearer",
+                    BearerFormat = "JWT",
+                    Description = "Enter JWT Bearer Token"
+                }
+            };
+            document.Security = [
+                new OpenApiSecurityRequirement{
+               { new OpenApiSecuritySchemeReference("Bearer"), new List<string>()}
+            }
+            ];
+            return Task.CompletedTask;
+        });
+    });
+
+}
+
+
+
+
+// builder.Services.AddOpenApi("v1");
+// builder.Services.AddOpenApi("v2");
+
+// Add OpenAPI with Swagger
+builder.Services.AddEndpointsApiExplorer();
+
+
 //Add Automapper VillaDTO to Villa
 builder.Services.AddAutoMapper(o =>
 {
@@ -112,13 +145,23 @@ var app = builder.Build();
 // Configure the HTTP request pipeline
 if (app.Environment.IsDevelopment())
 {
-   app.MapOpenApi();
-  
+    app.MapOpenApi("/openapi/{documentName}.json");
+
+    var provider = app.Services.GetRequiredService<IApiVersionDescriptionProvider>();
     app.MapScalarApiReference(options =>
  {
      options.Title = "Demo - Royal Villa API";
-     options.AddDocument("v1", "Demo API v1", "/openapi/v1.json", isDefault: true)
-            .AddDocument("v2", "Demo API v2", "/openapi/v2.json");
+     var sortedVersion = provider.ApiVersionDescriptions.OrderBy(v => v.ApiVersion).ToList();
+
+     foreach (var description in sortedVersion)
+     {
+         var versionName = description.GroupName;
+         var versionNumber = description.ApiVersion.ToString();
+         var displayName = $"Demo API -- {versionNumber}";
+
+         var isDefault = description.ApiVersion.Equals(new ApiVersion(2, 0));
+         options.AddDocument(versionName, displayName, $"/openapi/{versionName}.json", isDefault: true);
+     }
  });
 }
 
