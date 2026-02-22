@@ -41,29 +41,32 @@ builder.Services.AddAuthentication(option =>
 builder.Services.AddControllers();
 
 //OpenApi
-builder.Services.AddOpenApi(options =>
-{
-    options.AddDocumentTransformer((document, context, cancellationToken) =>
-    {
-        document.Components ??= new();
-        document.Components.SecuritySchemes = new Dictionary<string, IOpenApiSecurityScheme>
-        {
-            ["Bearer"]= new OpenApiSecurityScheme
-            {
-                Type = SecuritySchemeType.Http,
-                Scheme = "bearer",
-                BearerFormat ="JWT",
-                Description = "Enter JWT Bearer Token"
-            }
-        };
-        document.Security = [
-            new OpenApiSecurityRequirement{
-               { new OpenApiSecuritySchemeReference("Bearer"), new List<string>()}
-            }
-        ];
-        return Task.CompletedTask;
-    });
-});
+// builder.Services.AddOpenApi(options =>
+// {
+//     options.AddDocumentTransformer((document, context, cancellationToken) =>
+//     {
+//         document.Components ??= new();
+//         document.Components.SecuritySchemes = new Dictionary<string, IOpenApiSecurityScheme>
+//         {
+//             ["Bearer"]= new OpenApiSecurityScheme
+//             {
+//                 Type = SecuritySchemeType.Http,
+//                 Scheme = "bearer",
+//                 BearerFormat ="JWT",
+//                 Description = "Enter JWT Bearer Token"
+//             }
+//         };
+//         document.Security = [
+//             new OpenApiSecurityRequirement{
+//                { new OpenApiSecuritySchemeReference("Bearer"), new List<string>()}
+//             }
+//         ];
+//         return Task.CompletedTask;
+//     });
+// });
+
+builder.Services.AddOpenApi("v1");
+builder.Services.AddOpenApi("v2");
 
 // Add OpenAPI with Swagger
 builder.Services.AddEndpointsApiExplorer();
@@ -97,7 +100,7 @@ builder.Services.AddAutoMapper(o =>
     o.CreateMap<VillaAmenities, VillaAmenitiesCreateDTO>().ReverseMap();
     o.CreateMap<VillaAmenities, VillaAmenitiesUpdateDTO>().ReverseMap();
     o.CreateMap<VillaAmenities, VillaAmenitiesDTO>()
-    .ForMember(dest => dest.VillaName, opt=> opt.MapFrom(src=> src.Villa!=null? src.Villa.Name: null));
+    .ForMember(dest => dest.VillaName, opt => opt.MapFrom(src => src.Villa != null ? src.Villa.Name : null));
 
     o.CreateMap<VillaAmenitiesDTO, VillaAmenities>();
 }
@@ -109,17 +112,17 @@ var app = builder.Build();
 // Configure the HTTP request pipeline
 if (app.Environment.IsDevelopment())
 {
-    app.UseSwagger();
+   app.MapOpenApi();
+  
     app.MapScalarApiReference(options =>
-    {
-        options
-            .WithTitle("Royal Villa API")
-            .WithOpenApiRoutePattern("/swagger/{documentName}/swagger.json")
-            .WithDefaultHttpClient(ScalarTarget.CSharp, ScalarClient.HttpClient);
-    });
+ {
+     options.Title = "Demo - Royal Villa API";
+     options.AddDocument("v1", "Demo API v1", "/openapi/v1.json", isDefault: true)
+            .AddDocument("v2", "Demo API v2", "/openapi/v2.json");
+ });
 }
 
-app.UseCors(o=>o.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod().WithExposedHeaders("*"));
+app.UseCors(o => o.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod().WithExposedHeaders("*"));
 
 app.UseHttpsRedirection();
 
