@@ -1,3 +1,4 @@
+using Asp.Versioning;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using RoyalVilla.Dto;
@@ -6,6 +7,7 @@ using RoyalVilla.Services;
 namespace RoyalVilla.Controllers
 {
     [ApiController]
+    [ApiVersionNeutral]
     [Route("api/auth")]
     public class AuthController(IAuthService authService) : ControllerBase
     {
